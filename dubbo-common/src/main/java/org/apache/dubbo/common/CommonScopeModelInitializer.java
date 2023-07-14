@@ -34,6 +34,11 @@ public class CommonScopeModelInitializer implements ScopeModelInitializer {
     @Override
     public void initializeFrameworkModel(FrameworkModel frameworkModel) {
         ScopeBeanFactory beanFactory = frameworkModel.getBeanFactory();
+        // framework scope 注册
+        // FrameworkExecutorRepository
+        // ConverterUtil
+        // SerializeSecurityManager
+        // DefaultSerializeClassChecker
         beanFactory.registerBean(FrameworkExecutorRepository.class);
         beanFactory.registerBean(ConverterUtil.class);
         beanFactory.registerBean(SerializeSecurityManager.class);
@@ -43,6 +48,10 @@ public class CommonScopeModelInitializer implements ScopeModelInitializer {
     @Override
     public void initializeApplicationModel(ApplicationModel applicationModel) {
         ScopeBeanFactory beanFactory = applicationModel.getBeanFactory();
+        // application scope 注册
+        // ShutdownHookCallbacks
+        // FrameworkStatusReportService
+        // ConfigurationCache
         beanFactory.registerBean(ShutdownHookCallbacks.class);
         beanFactory.registerBean(FrameworkStatusReportService.class);
         beanFactory.registerBean(new ConfigurationCache());
@@ -50,6 +59,9 @@ public class CommonScopeModelInitializer implements ScopeModelInitializer {
 
     @Override
     public void initializeModuleModel(ModuleModel moduleModel) {
+        // module scope 注册
+        // ConfigurationCache
+        // SerializeSecurityConfigurator
         ScopeBeanFactory beanFactory = moduleModel.getBeanFactory();
         beanFactory.registerBean(new ConfigurationCache());
         beanFactory.registerBean(SerializeSecurityConfigurator.class);

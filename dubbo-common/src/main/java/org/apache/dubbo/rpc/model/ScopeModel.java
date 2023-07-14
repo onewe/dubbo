@@ -98,8 +98,11 @@ public abstract class ScopeModel implements ExtensionAccessor {
      */
     protected void initialize() {
         synchronized (instLock) {
+            // 创建 extensionDir 此类用于加载 extensionLoader, 而 extensionLoader 用于加载指定的 extension
             this.extensionDirector = new ExtensionDirector(parent != null ? parent.getExtensionDirector() : null, scope, this);
+            // extensionPostProcessor 类似与 spring 的 BeanPostProcessor 在 extension 加载完毕之后注入 ScopeModel
             this.extensionDirector.addExtensionPostProcessor(new ScopeModelAwareExtensionProcessor(this));
+            // 创建 beanFactory 类似 spring 的一种 bean 管理机制
             this.beanFactory = new ScopeBeanFactory(parent != null ? parent.getBeanFactory() : null, extensionDirector);
 
             // Add Framework's ClassLoader by default

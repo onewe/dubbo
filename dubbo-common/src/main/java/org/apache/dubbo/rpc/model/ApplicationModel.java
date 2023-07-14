@@ -102,22 +102,32 @@ public class ApplicationModel extends ScopeModel {
         super(frameworkModel, ExtensionScope.APPLICATION, isInternal);
         synchronized (instLock) {
             Assert.notNull(frameworkModel, "FrameworkModel can not be null");
+            // 设置 frameworkModel
             this.frameworkModel = frameworkModel;
+            // 把当前的 applicationModel 放入到 frameworkModel 中的 applicationModels 集合中
+            // 放入集合的同时设置 InternalId
             frameworkModel.addApplication(this);
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(getDesc() + " is created");
             }
+            // 初始化 application model
             initialize();
 
+            // 创建内部的使用的 moduleModel
             this.internalModule = new ModuleModel(this, true);
+            // 创建 application 级别的 server 存储
             this.serviceRepository = new ServiceRepository(this);
 
+            // 加载 application scope 级别的 ApplicationInitListener 所有扩展
+            // 这个扩展只能算得上一个回调 在 applicationModel 初始化时通知 listener
             ExtensionLoader<ApplicationInitListener> extensionLoader = this.getExtensionLoader(ApplicationInitListener.class);
             Set<String> listenerNames = extensionLoader.getSupportedExtensions();
             for (String listenerName : listenerNames) {
+                // 加载 ApplicationInitListener 扩展并初始化
                 extensionLoader.getExtension(listenerName).init();
             }
 
+            // 初始化 application 级别的扩展 主要是 ConfigManager 和 Environment
             initApplicationExts();
 
             ExtensionLoader<ScopeModelInitializer> initializerExtensionLoader = this.getExtensionLoader(ScopeModelInitializer.class);
@@ -134,6 +144,7 @@ public class ApplicationModel extends ScopeModel {
 
     // already synchronized in constructor
     private void initApplicationExts() {
+        // 加载 ConfigManager 和 Environment
         Set<ApplicationExt> exts = this.getExtensionLoader(ApplicationExt.class).getSupportedExtensionInstances();
         for (ApplicationExt ext : exts) {
             ext.initialize();

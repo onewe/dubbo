@@ -63,7 +63,9 @@ public class ReflectionServiceDescriptor implements ServiceDescriptor {
     }
 
     private void initMethods() {
+        // 获取到 service 的所有方法
         Method[] methodsToExport = this.serviceInterfaceClass.getMethods();
+        // 每个 method 对象转换为 ReflectionMethodDescriptor 对象
         for (Method method : methodsToExport) {
             method.setAccessible(true);
 
@@ -73,6 +75,7 @@ public class ReflectionServiceDescriptor implements ServiceDescriptor {
             methodModels.add(methodDescriptor);
         }
 
+        // 每个方法对应方法前面的描述
         methods.forEach((methodName, methodList) -> {
             Map<String, MethodDescriptor> descMap = descToMethods.computeIfAbsent(methodName, k -> new HashMap<>());
             methodList.forEach(methodModel -> descMap.put(methodModel.getParamDesc(), methodModel));

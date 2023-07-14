@@ -478,6 +478,7 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
 
     public <T extends AbstractConfig> List<T> loadConfigsOfTypeFromProps(Class<T> cls) {
         List<T> tmpConfigs = new ArrayList<>();
+        // 从 env 中加载  dubbo properties
         PropertiesConfiguration properties = environment.getPropertiesConfiguration();
 
         // load multiple configs with id

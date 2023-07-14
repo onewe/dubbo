@@ -37,6 +37,7 @@ public class ServiceRepository {
     }
 
     private void initialize() {
+        // 注册内建服务
         if (inited.compareAndSet(false, true)) {
             Set<BuiltinServiceDetector> builtinServices
                 = applicationModel.getExtensionLoader(BuiltinServiceDetector.class).getSupportedExtensionInstances();

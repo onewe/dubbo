@@ -42,10 +42,17 @@ public class InstantiationStrategy {
     public InstantiationStrategy(ScopeModelAccessor scopeModelAccessor) {
         this.scopeModelAccessor = scopeModelAccessor;
     }
-
+    
+    /***
+     * 用于创建示例, 默认获取 Class 的默认构造器, 如果有 ScopeModel 为参数的构造器, 则放弃使用默认构造器
+     * @param type
+     * @param <T>
+     * @return
+     * @throws ReflectiveOperationException
+     */
     @SuppressWarnings("unchecked")
     public <T> T instantiate(Class<T> type) throws ReflectiveOperationException {
-
+        
         // should not use default constructor directly, maybe also has another constructor matched scope model arguments
         // 1. try to get default constructor
         Constructor<T> defaultConstructor = null;

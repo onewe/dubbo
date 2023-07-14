@@ -88,6 +88,7 @@ public class ScopeBeanFactory {
             throw new ScopeBeanException("already exists bean with same name and type, name=" + name + ", type=" + clazz.getName());
         }
         try {
+            // 实例化 创建对象
             instance = instantiationStrategy.instantiate(clazz);
         } catch (Throwable e) {
             throw new ScopeBeanException("create bean instance failed, type=" + clazz.getName(), e);
@@ -103,6 +104,8 @@ public class ScopeBeanFactory {
     public void registerBean(String name, Object bean) {
         checkDestroyed();
         // avoid duplicated register same bean
+        // 判断 bean 是否已经注册过
+        // 避免重复注册
         if (containsBean(name, bean)) {
             return;
         }
@@ -159,11 +162,15 @@ public class ScopeBeanFactory {
     }
 
     private void initializeBean(String name, Object bean) {
+        // 初始化 bean
         checkDestroyed();
         try {
+            // 如果 bean 实现了 ExtensionAccessorAware 接口则 注入 extensionAccessor
+            // extensionAccessor 用于访问 extension
             if (bean instanceof ExtensionAccessorAware) {
                 ((ExtensionAccessorAware) bean).setExtensionAccessor(extensionAccessor);
             }
+            // 用于做 bean 初始化后的 后置处理
             for (ExtensionPostProcessor processor : extensionPostProcessors) {
                 processor.postProcessAfterInitialization(bean, name);
             }
@@ -191,7 +198,10 @@ public class ScopeBeanFactory {
     }
 
     public <T> T getBean(String name, Class<T> type) {
+        // 获取 bean
         T bean = getBeanInternal(name, type);
+        // 如果未获取到 bean 并且 父 BeanFactory 不为空
+        // 则在父 factory 中去获取 bean
         if (bean == null && parent != null) {
             return parent.getBean(name, type);
         }
@@ -208,10 +218,14 @@ public class ScopeBeanFactory {
         BeanInfo firstCandidate = null;
         for (BeanInfo beanInfo : registeredBeanInfos) {
             // if required bean type is same class/superclass/interface of the registered bean
+            // 判断 指定类型的 class 是否已经被创建过
             if (type.isAssignableFrom(beanInfo.instance.getClass())) {
+                // 如果已经被创建了 并且 bean 的名称和获取 bean 的名称一致
+                // 则直接返回之前创建好的 bean 实例
                 if (StringUtils.isEquals(beanInfo.name, name)) {
                     return (T) beanInfo.instance;
                 } else {
+                    // 把所有的 bean 并且 bean 名称不与参数中的名字一致的实例都放在集合里面
                     // optimize for only one matched bean
                     if (firstCandidate == null) {
                         firstCandidate = beanInfo;
@@ -226,15 +240,18 @@ public class ScopeBeanFactory {
             }
         }
 
+        // 如果 bean 的名称没有被匹配并且集合中只有一个实例则返回这个实例
         // if bean name not matched and only single candidate
         if (candidates != null) {
             if (candidates.size() == 1) {
                 return (T) candidates.get(0).instance;
             } else if (candidates.size() > 1) {
+                // 如果 bean 名称没有被匹配并且集合中有多个实例 抛出异常
                 List<String> candidateBeanNames = candidates.stream().map(beanInfo -> beanInfo.name).collect(Collectors.toList());
                 throw new ScopeBeanException("expected single matching bean but found " + candidates.size() + " candidates for type [" + type.getName() + "]: " + candidateBeanNames);
             }
         } else if (firstCandidate != null) {
+            // 如果有且至只有一个 则返回这个实例回去
             return (T) firstCandidate.instance;
         }
         return null;

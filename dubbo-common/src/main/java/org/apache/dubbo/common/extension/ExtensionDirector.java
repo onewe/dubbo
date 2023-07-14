@@ -78,21 +78,31 @@ public class ExtensionDirector implements ExtensionAccessor {
         }
 
         // 1. find in local cache
+        // 从本地缓存中获取 extension loader
         ExtensionLoader<T> loader = (ExtensionLoader<T>) extensionLoadersMap.get(type);
-
+        
+        // 从缓存中获取 扩展 scope
         ExtensionScope scope = extensionScopeMap.get(type);
+        // 如果缓存中未找到 扩展对应的 scope
+        // 则从扩展类上的 SPI 注解汇总获取
         if (scope == null) {
             SPI annotation = type.getAnnotation(SPI.class);
             scope = annotation.scope();
+            // 缓存 扩展对应的 scope
             extensionScopeMap.put(type, scope);
         }
 
+        // 如果 scope 是 self 级别
+        // 加载扩展
         if (loader == null && scope == ExtensionScope.SELF) {
             // create an instance in self scope
+            // 创建 extension loader
             loader = createExtensionLoader0(type);
         }
 
         // 2. find in parent
+        // 如果扩展不是 self 级别
+        // 则先从 parent 的 extensionDirector 中进行加载
         if (loader == null) {
             if (this.parent != null) {
                 loader = this.parent.getExtensionLoader(type);
@@ -100,6 +110,8 @@ public class ExtensionDirector implements ExtensionAccessor {
         }
 
         // 3. create it
+        // 如果 parent 的 extensionDirector 中未加载到 extension loader
+        // 创建一个 extension loader
         if (loader == null) {
             loader = createExtensionLoader(type);
         }
@@ -109,8 +121,11 @@ public class ExtensionDirector implements ExtensionAccessor {
 
     private <T> ExtensionLoader<T> createExtensionLoader(Class<T> type) {
         ExtensionLoader<T> loader = null;
+        // 判断 extension Director 的 scope 是否和扩展的 SPI 注解中的 scope 是否匹配
+        // 匹配则创建 extension loader
         if (isScopeMatched(type)) {
             // if scope is matched, just create it
+            // 创建 extensionLoader
             loader = createExtensionLoader0(type);
         }
         return loader;
@@ -120,6 +135,7 @@ public class ExtensionDirector implements ExtensionAccessor {
     private <T> ExtensionLoader<T> createExtensionLoader0(Class<T> type) {
         checkDestroyed();
         ExtensionLoader<T> loader;
+        // 创建 extension loader 并加入到缓存中
         extensionLoadersMap.putIfAbsent(type, new ExtensionLoader<T>(type, this, scopeModel));
         loader = (ExtensionLoader<T>) extensionLoadersMap.get(type);
         return loader;

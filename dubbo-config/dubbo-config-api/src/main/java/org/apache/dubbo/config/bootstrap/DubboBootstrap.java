@@ -159,10 +159,14 @@ public final class DubboBootstrap {
 
     private DubboBootstrap(ApplicationModel applicationModel) {
         this.applicationModel = applicationModel;
+        // 获取 application 级别的 configManager
         configManager = applicationModel.getApplicationConfigManager();
+        // 获取 application 级别的 environment
         environment = applicationModel.getModelEnvironment();
-
+        
+        // 获取 application 级别的 executorRepository
         executorRepository = applicationModel.getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
+        // 获取 application 级别的 applicationDeployer
         applicationDeployer = applicationModel.getDeployer();
         // listen deploy events
         applicationDeployer.addDeployListener(new DeployListenerAdapter<ApplicationModel>() {
@@ -181,6 +185,7 @@ public final class DubboBootstrap {
                 notifyStopped(applicationModel);
             }
         });
+        
         // register DubboBootstrap bean
         applicationModel.getBeanFactory().registerBean(this);
     }

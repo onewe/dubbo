@@ -115,10 +115,13 @@ public class ModuleServiceRepository {
 
     public ServiceDescriptor registerService(Class<?> interfaceClazz) {
         ServiceDescriptor serviceDescriptor = new ReflectionServiceDescriptor(interfaceClazz);
+        // 注册服务
         return registerService(interfaceClazz, serviceDescriptor);
     }
 
     public ServiceDescriptor registerService(Class<?> interfaceClazz, ServiceDescriptor serviceDescriptor) {
+        // 判断 service 是否被缓存
+        // 如果被缓存则新建一个 CopyOnWriteArrayList
         List<ServiceDescriptor> serviceDescriptors = services.computeIfAbsent(interfaceClazz.getName(),
             k -> new CopyOnWriteArrayList<>());
         synchronized (serviceDescriptors) {

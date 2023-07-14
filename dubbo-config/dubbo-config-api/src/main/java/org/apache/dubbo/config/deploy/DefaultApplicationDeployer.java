@@ -188,8 +188,10 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
                 return;
             }
             // register shutdown hook
+            // 注册关闭钩子
             registerShutdownHook();
 
+            // 启动配置中心
             startConfigCenter();
 
             loadApplicationConfigs();
@@ -545,17 +547,23 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
     @Override
     public Future start() {
         synchronized (startLock) {
+            // 如果状态是正在停止 或 已经停止 或者 失败
             if (isStopping() || isStopped() || isFailed()) {
                 throw new IllegalStateException(getIdentifier() + " is stopping or stopped, can not start again");
             }
 
             try {
                 // maybe call start again after add new module, check if any new module
+                // 这个逻辑是防止在新增加模块后的二次启动
+                // 遍历 application 下面是否存在 pending 状态下的模块
                 boolean hasPendingModule = hasPendingModule();
 
+                // 判断是否是正在启动
                 if (isStarting()) {
                     // currently, is starting, maybe both start by module and application
                     // if it has new modules, start them
+                    // 如果存在 pending 状态的模块 并且 application 模块处于 启动中
+                    // 直接启动 处于 pending 状态下的模块
                     if (hasPendingModule) {
                         startModules();
                     }
@@ -564,14 +572,17 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
                 }
 
                 // if is started and no new module, just return
+                // 如果已经启动完毕并且不存在 pending 的模块 直接返回 complete future
                 if (isStarted() && !hasPendingModule) {
                     return CompletableFuture.completedFuture(false);
                 }
 
                 // pending -> starting : first start app
                 // started -> starting : re-start app
+                // 状态改为启动中
                 onStarting();
 
+                // 初始化
                 initialize();
 
                 doStart();
@@ -632,6 +643,7 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
 
     private void startModules() {
         // ensure init and start internal module first
+        // 优先启动内部的模块
         prepareInternalModule();
 
         // filter and start pending modules, ignore new module during starting, throw exception of module start
@@ -970,9 +982,13 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
     private void onStarting() {
         // pending -> starting
         // started -> starting
+        // 如果不是 pending 状态 或者 已启动完毕状态
+        // 直接返回
         if (!(isPending() || isStarted())) {
             return;
         }
+        // 设置状态为 starting
+        // 并创建一个 future
         setStarting();
         startFuture = new CompletableFuture();
         if (logger.isInfoEnabled()) {

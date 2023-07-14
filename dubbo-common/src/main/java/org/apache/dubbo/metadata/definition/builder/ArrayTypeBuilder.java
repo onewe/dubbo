@@ -45,6 +45,7 @@ public class ArrayTypeBuilder implements TypeBuilder {
         td = new TypeDefinition(canonicalName);
         typeCache.put(canonicalName, td);
         // Process the component type of array.
+        // 获取 数组中元素的具体类型
         Class<?> componentType = clazz.getComponentType();
         TypeDefinition itemTd = TypeDefinitionBuilder.build(componentType, componentType, typeCache);
         if (itemTd != null) {

@@ -1176,6 +1176,7 @@ public final class ReflectUtils {
 
     public static Type[] getReturnTypes(Method method) {
         Class<?> returnType = method.getReturnType();
+        // 获取返回泛型类型
         Type genericReturnType = method.getGenericReturnType();
         if (Future.class.isAssignableFrom(returnType)) {
             if (genericReturnType instanceof ParameterizedType) {

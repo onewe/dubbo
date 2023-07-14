@@ -56,18 +56,25 @@ public class ModuleModel extends ScopeModel {
         super(applicationModel, ExtensionScope.MODULE, isInternal);
         synchronized (instLock) {
             Assert.notNull(applicationModel, "ApplicationModel can not be null");
+            // 设置 application model
             this.applicationModel = applicationModel;
+            // 把 moduleModel 添加到 application model
+            // 并设置 InternalId
             applicationModel.addModule(this, isInternal);
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(getDesc() + " is created");
             }
 
+            // 初始化
             initialize();
 
+            // 创建 module 级别到 service 仓库
             this.serviceRepository = new ModuleServiceRepository(this);
 
+            // 初始化 module 扩展
             initModuleExt();
 
+            // 加载 ScopeModelInitializer 并且初始化
             ExtensionLoader<ScopeModelInitializer> initializerExtensionLoader = this.getExtensionLoader(ScopeModelInitializer.class);
             Set<ScopeModelInitializer> initializers = initializerExtensionLoader.getSupportedExtensionInstances();
             for (ScopeModelInitializer initializer : initializers) {
@@ -78,8 +85,11 @@ public class ModuleModel extends ScopeModel {
             Assert.assertTrue(getConfigManager().isInitialized(), "ModuleConfigManager can not be initialized");
 
             // notify application check state
+            // 从 application 中获取 发布器
+            // deployer 在 application 初始化 ScopeModelInitializer 时创建
             ApplicationDeployer applicationDeployer = applicationModel.getDeployer();
             if (applicationDeployer != null) {
+                // 通知发布器 状态为 pending
                 applicationDeployer.notifyModuleChanged(this, DeployState.PENDING);
             }
         }

@@ -76,28 +76,54 @@ public class FrameworkModel extends ScopeModel {
      * Use {@link FrameworkModel#newModel()} to create a new model
      */
     public FrameworkModel() {
+        // 父 model 为 null, scope 为 FRAMEWORK, 非内部模块
         super(null, ExtensionScope.FRAMEWORK, false);
         synchronized (globalLock) {
             synchronized (instLock) {
+                // 设置内部 id
+                /**
+                 * The internal id is used to represent the hierarchy of the model tree, such as:
+                 * <ol>
+                 *     <li>1</li>
+                 *     FrameworkModel (index=1)
+                 *     <li>1.2</li>
+                 *     FrameworkModel (index=1) -> ApplicationModel (index=2)
+                 *     <li>1.2.0</li>
+                 *     FrameworkModel (index=1) -> ApplicationModel (index=2) -> ModuleModel (index=0, internal module)
+                 *     <li>1.2.1</li>
+                 *     FrameworkModel (index=1) -> ApplicationModel (index=2) -> ModuleModel (index=1, first user module)
+                 * </ol>
+                 */
                 this.setInternalId(String.valueOf(index.getAndIncrement()));
                 // register FrameworkModel instance early
+                // 把自己放入到 allInstances 集合中, 这是一个全局静态集合
                 allInstances.add(this);
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(getDesc() + " is created");
                 }
+                // 初始化 framework model
                 initialize();
-
+                
+                // 创建 typeBuilder, TypeBuilder 用于构建 typeDefinition
+                // typeDefinition 用于描述类型
                 TypeDefinitionBuilder.initBuilders(this);
 
+                // 创建 service 仓库
                 serviceRepository = new FrameworkServiceRepository(this);
-
+                
+                // 加载 ScopeModelInitializer 扩展 self 级别
                 ExtensionLoader<ScopeModelInitializer> initializerExtensionLoader = this.getExtensionLoader(ScopeModelInitializer.class);
+                // 获取所有的 ScopeModelInitializer 扩展
                 Set<ScopeModelInitializer> initializers = initializerExtensionLoader.getSupportedExtensionInstances();
                 for (ScopeModelInitializer initializer : initializers) {
+                    // 进行初始化
                     initializer.initializeFrameworkModel(this);
                 }
 
+                // 创建内部使用的 ApplicationModel
                 internalApplicationModel = new ApplicationModel(this, true);
+                // 设置 application config
+                // 加载 application 级别的 configManager
                 internalApplicationModel.getApplicationConfigManager().setApplication(
                     new ApplicationConfig(internalApplicationModel, CommonConstants.DUBBO_INTERNAL_APPLICATION));
                 internalApplicationModel.setModelName(CommonConstants.DUBBO_INTERNAL_APPLICATION);

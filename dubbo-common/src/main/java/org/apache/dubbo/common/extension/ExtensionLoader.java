@@ -930,12 +930,15 @@ public class ExtensionLoader<T> {
     }
 
     private Map<String, Class<?>> getExtensionClasses() {
+        // 从缓存中获取
         Map<String, Class<?>> classes = cachedClasses.get();
+        // double check
         if (classes == null) {
             synchronized (cachedClasses) {
                 classes = cachedClasses.get();
                 if (classes == null) {
                     try {
+                        // 加载扩展 所有的 class
                         classes = loadExtensionClasses();
                     } catch (InterruptedException e) {
                         logger.error(COMMON_ERROR_LOAD_EXTENSION, "", "", "Exception occurred when loading extension class (interface: " + type + ")", e);
@@ -954,10 +957,12 @@ public class ExtensionLoader<T> {
     @SuppressWarnings("deprecation")
     private Map<String, Class<?>> loadExtensionClasses() throws InterruptedException {
         checkDestroyed();
+        // 缓存默认扩展名
         cacheDefaultExtensionName();
 
         Map<String, Class<?>> extensionClasses = new HashMap<>();
-
+        
+        // 根据不同的加载策略去加载
         for (LoadingStrategy strategy : strategies) {
             loadDirectory(extensionClasses, strategy, type.getName());
 
@@ -971,6 +976,7 @@ public class ExtensionLoader<T> {
     }
 
     private void loadDirectory(Map<String, Class<?>> extensionClasses, LoadingStrategy strategy, String type) throws InterruptedException {
+        // 加载内部目录
         loadDirectoryInternal(extensionClasses, strategy, type);
         try {
             String oldType = type.replace("org.apache", "com.alibaba");
@@ -1008,35 +1014,52 @@ public class ExtensionLoader<T> {
     }
 
     private void loadDirectoryInternal(Map<String, Class<?>> extensionClasses, LoadingStrategy loadingStrategy, String type) throws InterruptedException {
+        // 获取加载策略中的目录 并和扩展类名进行拼接 = 文件名
         String fileName = loadingStrategy.directory() + type;
         try {
             List<ClassLoader> classLoadersToLoad = new LinkedList<>();
 
             // try to load from ExtensionLoader's ClassLoader first
+            // 判断是否优先使用 extensionClassloader
             if (loadingStrategy.preferExtensionClassLoader()) {
                 ClassLoader extensionLoaderClassLoader = ExtensionLoader.class.getClassLoader();
+                // 判断 system class loader 是否等于 ExtensionLoader.class 的 classloader
                 if (ClassLoader.getSystemClassLoader() != extensionLoaderClassLoader) {
+                    // 如果不等于则把 classloader 放入到 classLoadersToLoad 集合中
+                    // 相当于该集合的第一个元素就是 extensionLoader 的 classloader
                     classLoadersToLoad.add(extensionLoaderClassLoader);
                 }
             }
 
+            // 判断该扩展是否指定了加载策略
             if (specialSPILoadingStrategyMap.containsKey(type)) {
+                // 获取扩展对应的加载策略名
                 String internalDirectoryType = specialSPILoadingStrategyMap.get(type);
                 //skip to load spi when name don't match
+                // 如果扩展对应的策略名不是 ALL 并且不等于当前策略的名称 则跳过
+                // 放弃加载 策略无法匹配
                 if (!LoadingStrategy.ALL.equals(internalDirectoryType)
                     && !internalDirectoryType.equals(loadingStrategy.getName())) {
                     return;
                 }
+                // 策略匹配清除 class loader 集合
                 classLoadersToLoad.clear();
+                // 直接使用 ExtensionLoader.class 的 classloader
                 classLoadersToLoad.add(ExtensionLoader.class.getClassLoader());
             } else {
+                // 扩展没有指定加载策略
                 // load from scope model
+                // 从 scopeModel 中获取 classloader
                 Set<ClassLoader> classLoaders = scopeModel.getClassLoaders();
-
+                
+                // 判断 classloader 是否为空集合
                 if (CollectionUtils.isEmpty(classLoaders)) {
+                    // 如果为空 则直接用默认的 classloader 加载 扩展配置文件
                     Enumeration<java.net.URL> resources = ClassLoader.getSystemResources(fileName);
                     if (resources != null) {
+                        // 遍历所有的扩展配置文件
                         while (resources.hasMoreElements()) {
+                            // 加载
                             loadResource(extensionClasses, null, resources.nextElement(), loadingStrategy.overridden(),
                                 loadingStrategy.includedPackages(),
                                 loadingStrategy.excludedPackages(),
@@ -1087,8 +1110,10 @@ public class ExtensionLoader<T> {
                     } else {
                         clazz = line;
                     }
+                    // 扩展配置中的 class 不为空 并且该 class 没有在排出的范围内 并且是被包含的 并且 classloader 没有被排出掉
                     if (StringUtils.isNotEmpty(clazz) && !isExcluded(clazz, excludedPackages) && isIncluded(clazz, includedPackages)
                         && !isExcludedByClassLoader(clazz, classLoader, onlyExtensionClassLoaderPackages)) {
+                        // 使用指定的 classloader 加载 class
                         loadClass(extensionClasses, resourceURL, Class.forName(clazz, true, classLoader), name, overridden);
                     }
                 } catch (Throwable t) {
@@ -1182,23 +1207,37 @@ public class ExtensionLoader<T> {
                 type + ", class line: " + clazz.getName() + "), class "
                 + clazz.getName() + " is not subtype of interface.");
         }
+        // 判断改类是否是自适应类
         if (clazz.isAnnotationPresent(Adaptive.class)) {
+            // 缓存自适应类型 如果可以被覆盖的话
             cacheAdaptiveClass(clazz, overridden);
         } else if (isWrapperClass(clazz)) {
+            // 判断是否是 wrapper 类, wrapper 类的特征是
+            // 构造器有且只有一个参数, 并且这个参数是 扩展类
             cacheWrapperClass(clazz);
         } else {
+            // 判断扩展名称是否为空
             if (StringUtils.isEmpty(name)) {
+                // 如果扩展名为空 从扩展类中获取 Extension 注解
+                // Extension 有扩展名称
                 name = findAnnotationName(clazz);
                 if (name.length() == 0) {
                     throw new IllegalStateException("No such extension name for the class " + clazz.getName() + " in the config " + resourceURL);
                 }
             }
 
+            // 使用逗号进行切割
             String[] names = NAME_SEPARATOR.split(name);
+            // 判断切割后的数组是否为空
             if (ArrayUtils.isNotEmpty(names)) {
+                // 如果不为空则取第0个元素 作为扩展名
+                // 并且判断是否有 Activate 注解, 如果有在放入到 cachedActivates 缓存中
                 cacheActivateClass(clazz, names[0]);
                 for (String n : names) {
+                    // 遍历扩展名进行缓存
                     cacheName(clazz, n);
+                    // 缓存扩展类型到 extensionClasses 中
+                    // extensionClasses 不允许有重复的扩展, 名称一样 类型不一样
                     saveInExtensionClass(extensionClasses, clazz, n, overridden);
                 }
             }
