@@ -46,7 +46,7 @@ public class Application {
 
         DubboBootstrap bootstrap = DubboBootstrap.getInstance();
         bootstrap.application(new ApplicationConfig("dubbo-demo-api-consumer")) // 设置 application 配置
-            .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
+            .registry(new RegistryConfig("nacos://192.168.0.101:8848"))
             .protocol(new ProtocolConfig(CommonConstants.DUBBO, -1))
             .reference(reference)
             .start();

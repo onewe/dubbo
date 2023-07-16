@@ -149,17 +149,23 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
             return null;
         }
         // ignore MethodConfig
+        // 判断是否是支持的配置
         if (!isSupportConfigType(config.getClass())) {
             throw new IllegalArgumentException("Unsupported config type: " + config);
         }
 
+        // 判断 scope 级别和当前的 configManager 中的 scope 级别是否相等
+        // 如果不相等则设置 scope 等于 当前 configManager 中的 scope
         if (config.getScopeModel() != scopeModel) {
             config.setScopeModel(scopeModel);
         }
 
+        // 判断 config 缓存中是否已经存在缓存好的 config 对象
         Map<String, AbstractConfig> configsMap = configsCache.computeIfAbsent(getTagName(config.getClass()), type -> new ConcurrentHashMap<>());
 
         // fast check duplicated equivalent config before write lock
+        // 判断 config 是否是  referenceConfig 和 serviceConfig
+        // 如果不是则进行快速判断 判断 config 是否已经背缓存
         if (!(config instanceof ReferenceConfigBase || config instanceof ServiceConfigBase)) {
             for (AbstractConfig value : configsMap.values()) {
                 if (value.equals(config)) {
@@ -170,6 +176,7 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
 
         // lock by config type
         synchronized (configsMap) {
+            // 添加配置到缓存中 如果缓存中没有的话
             return (T) addIfAbsent(config, configsMap);
         }
     }
@@ -199,20 +206,28 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
         }
 
         // find by value
+        // 寻找重复的配置
         Optional<C> prevConfig = findDuplicatedConfig(configsMap, config);
+        // 如果已经存在配置 则直接返回
         if (prevConfig.isPresent()) {
             return prevConfig.get();
         }
 
+        // 获取 config 的 id
         String key = config.getId();
+        // 如果 key 为空 则生成一个 key
+        // 然后不停的在 configMap 中去查找 生成的 key 是否被使用
         if (key == null) {
             do {
                 // generate key if id is not set
+                // config#index
                 key = generateConfigId(config);
             } while (configsMap.containsKey(key));
         }
 
+        // 二次检查 key 是否窜爱
         C existedConfig = configsMap.get(key);
+        // 如果 key 已经存在, 则代表此配置重复(key 相同 但是 value 不同)
         if (existedConfig != null && !isEquals(existedConfig, config)) {
             String type = config.getClass().getSimpleName();
             logger.warn(COMMON_UNEXPECTED_EXCEPTION, "", "", String.format("Duplicate %s found, there already has one default %s or more than two %ss have the same id, " +
@@ -221,6 +236,7 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
         }
 
         // override existed config if any
+        // 就算存在 直接覆盖
         configsMap.put(key, config);
         return config;
     }
@@ -260,8 +276,11 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
     protected <C extends AbstractConfig> Optional<C> findDuplicatedConfig(Map<String, C> configsMap, C config) {
 
         // find by value
+        // 通过 values 寻找 config 是否在 map 中
         Optional<C> prevConfig = findConfigByValue(configsMap.values(), config);
+        // 如果缓存中有 config
         if (prevConfig.isPresent()) {
+            // 判断是否是同一个对象
             if (prevConfig.get() == config) {
                 // the new one is same as existing one
                 return prevConfig;
@@ -275,6 +294,13 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
         }
 
         // check unique config
+        // 检查是否是需要保持唯一的 config
+        // init unique config types
+        // unique config in application
+        // ApplicationConfig、MonitorConfig、MetricsConfig、SslConfig
+        // unique config in each module
+        // ModuleConfig.class)
+
         return checkUniqueConfig(configsMap, config);
     }
 
@@ -357,12 +383,14 @@ public abstract class AbstractConfigManager extends LifecycleAdapter {
 
     protected <C extends AbstractConfig> Optional<C> findConfigByValue(Collection<C> values, C config) {
         // 1. find same config instance (speed up raw api usage)
+        // 使用 == 操作符 来查找是否有相等的配置
         Optional<C> prevConfig = values.stream().filter(val -> val == config).findFirst();
         if (prevConfig.isPresent()) {
             return prevConfig;
         }
 
         // 2. find equal config
+        // 使用 eq 方法来查找是否有相等的配置
         prevConfig = values.stream()
             .filter(val -> isEquals(val, config))
             .findFirst();

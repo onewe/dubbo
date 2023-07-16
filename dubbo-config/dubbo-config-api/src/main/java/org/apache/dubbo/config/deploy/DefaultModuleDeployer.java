@@ -159,7 +159,9 @@ public class DefaultModuleDeployer extends AbstractDeployer<ModuleModel> impleme
 
             // prepare application instance
             // exclude internal module to avoid wait itself
+            // 判断 模块是否是内部模块
             if (moduleModel != moduleModel.getApplicationModel().getInternalModule()) {
+                // 优先启动 内部模块
                 applicationDeployer.prepareInternalModule();
             }
 

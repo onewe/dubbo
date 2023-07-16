@@ -193,9 +193,11 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
 
             // 启动配置中心
             startConfigCenter();
-
+        
+            // 加载 application 配置
             loadApplicationConfigs();
 
+            // 初始化 模块 的 deployer
             initModuleDeployers();
 
             // @since 2.7.8
@@ -230,6 +232,7 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
     private void startConfigCenter() {
 
         // load application config
+        // 加载配置 ApplicationConfig
         configManager.loadConfigsOfTypeFromProps(ApplicationConfig.class);
 
         // try set model name
@@ -238,6 +241,7 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
         }
 
         // load config centers
+        // 加载配置 ConfigCenterConfig
         configManager.loadConfigsOfTypeFromProps(ConfigCenterConfig.class);
 
         useRegistryAsConfigCenterIfNecessary();
@@ -260,6 +264,13 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
             }
         }
 
+        // SystemConfiguration ->
+        // EnvironmentConfiguration ->
+        // AppExternalConfiguration ->
+        // ExternalConfiguration  ->
+        // AppConfiguration ->
+        // AbstractConfig ->
+        // PropertiesConfiguration
         if (CollectionUtils.isNotEmpty(configCenters)) {
             CompositeDynamicConfiguration compositeDynamicConfiguration = new CompositeDynamicConfiguration();
             for (ConfigCenterConfig configCenter : configCenters) {
